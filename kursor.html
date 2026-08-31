@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Touchpad Remote</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 15px;
+        }
+        #touchpad {
+            flex: 1;
+            background-color: #2a2a2a;
+            border: 2px solid #444;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+            font-size: 14px;
+            touch-action: none;
+            margin-bottom: 15px;
+        }
+        .buttons-container {
+            display: flex;
+            gap: 15px;
+            height: 80px;
+        }
+        .btn {
+            flex: 1;
+            background-color: #333;
+            border: 1px solid #555;
+            border-radius: 12px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .btn:active {
+            background-color: #0088cc;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="touchpad">Barmog'ingiz bilan kursorni boshqaring</div>
+
+    <div class="buttons-container">
+        <div class="btn" id="leftClick">CHAP</div>
+        <div class="btn" id="rightClick">O'NG</div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Mini App'ni to'liq ekranga yoyish
+
+        const touchpad = document.getElementById('touchpad');
+        let lastX = 0;
+        let lastY = 0;
+
+        // Barmog'ni tekkizganda
+        touchpad.addEventListener('touchstart', (e) => {
+            lastX = e.touches[0].clientX;
+            lastY = e.touches[0].clientY;
+        });
+
+        // Barmog'ni surtganda (Kursorni harakatlantirish)
+        touchpad.addEventListener('touchmove', (e) => {
+            const currentX = e.touches[0].clientX;
+            const currentY = e.touches[0].clientY;
+
+            const deltaX = (currentX - lastX) * 2; // Sezgirlik tezligi
+            const deltaY = (currentY - lastY) * 2;
+
+            lastX = currentX;
+            lastY = currentY;
+
+            // Telegram orqali botga ma'lumot yuborish
+            tg.sendData(JSON.stringify({
+                action: 'move',
+                x: deltaX,
+                y: deltaY
+            }));
+        });
+
+        // Chap tugma bosilganda
+        document.getElementById('leftClick').addEventListener('touchstart', () => {
+            tg.sendData(JSON.stringify({ action: 'left_click' }));
+        });
+
+        // O'ng tugma bosilganda
+        document.getElementById('rightClick').addEventListener('touchstart', () => {
+            tg.sendData(JSON.stringify({ action: 'right_click' }));
+        });
+    </script>
+</body>
+</html>
