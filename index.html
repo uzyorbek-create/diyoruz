@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Repetitor Pro - №1 Exam System</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; user-select: none; background-color: #030712; color: #f3f4f6; }
+  </style>
+</head>
+<body class="min-h-screen flex justify-center items-center p-3">
+
+  <div class="w-full max-w-md bg-slate-900/90 border border-slate-800/80 rounded-3xl shadow-2xl overflow-hidden min-h-[680px] flex flex-col relative backdrop-blur-xl">
+    
+    <!-- Anti-cheat Banner -->
+    <div id="cheatBanner" class="hidden bg-rose-600 text-white text-xs font-bold px-4 py-2.5 flex justify-between items-center z-50 animate-pulse shadow-lg">
+      <span>⚠️ Diqqat: Ekrandan chiqish taqiqlangan!</span>
+      <span id="cheatCount" class="bg-black/40 px-2 py-0.5 rounded">1x</span>
+    </div>
+
+    <!-- Header -->
+    <header class="p-4 border-b border-slate-800/80 flex justify-between items-center bg-slate-900/50">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid fa-award text-sm"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-sm text-white">Smart Repetitor Pro</h1>
+          <p class="text-[10px] text-indigo-400 font-medium">Professional Onlayn Imtihon</p>
+        </div>
+      </div>
+      <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-semibold flex items-center gap-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Live
+      </span>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 p-5 overflow-y-auto flex flex-col justify-center">
+
+      <!-- Registration Step -->
+      <section id="regSection" class="space-y-5">
+        <div class="text-center space-y-1.5">
+          <h2 class="text-xl font-extrabold text-white">Ro'yxatdan o'tish</h2>
+          <p class="text-xs text-slate-400">Imtihonga kirish uchun ism va familiyangizni kiriting</p>
+        </div>
+        <div class="space-y-3.5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Ismingiz</label>
+            <input type="text" id="firstName" placeholder="Masalan: Diyorbek" class="w-full bg-slate-800/60 border border-slate-700/80 rounded-2xl p-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Familiyangiz</label>
+            <input type="text" id="lastName" placeholder="Masalan: Aliyev" class="w-full bg-slate-800/60 border border-slate-700/80 rounded-2xl p-3.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all">
+          </div>
+          <button onclick="startExam()" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-3.5 rounded-2xl shadow-xl shadow-indigo-600/30 text-sm transition-all transform active:scale-[0.98]">
+            Imtihonni Boshlash 🚀
+          </button>
+        </div>
+      </section>
+
+      <!-- Exam Room Step -->
+      <section id="examSection" class="hidden space-y-4 flex-1 flex flex-col justify-between">
+        <div>
+          <!-- Timer & Progress -->
+          <div class="flex justify-between items-center mb-4 bg-slate-800/40 p-3 rounded-2xl border border-slate-800">
+            <div class="text-amber-400 font-mono font-bold text-sm flex items-center gap-2">
+              <i class="fa-regular fa-clock"></i> <span id="timer">15:00</span>
+            </div>
+            <div class="text-xs text-slate-400 font-medium">Savol: <span id="qIndex" class="text-white font-bold">1</span>/<span id="totalQ">4</span></div>
+          </div>
+
+          <!-- Question Box -->
+          <div id="questionBox" class="bg-slate-800/30 border border-slate-800 rounded-3xl p-5 space-y-5"></div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex gap-3 pt-4">
+          <button id="prevBtn" onclick="prevQ()" class="flex-1 bg-slate-800/80 hover:bg-slate-700 text-xs font-semibold py-3.5 rounded-2xl transition-all">Oldingisi</button>
+          <button id="nextBtn" onclick="nextQ()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold py-3.5 rounded-2xl shadow-lg shadow-indigo-600/20 transition-all">Keyingisi</button>
+          <button id="finishBtn" onclick="finishExam()" class="hidden flex-1 bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold py-3.5 rounded-2xl shadow-lg shadow-emerald-600/20 transition-all">Tugatish ✓</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    let studentName = "";
+    let cheats = 0;
+    let currentIdx = 0;
+    let userAnswers = {};
+    let timeLeft = 900;
+    let timerInterval = null;
+
+    // Ustoz kiritadigan savollar bazasi
+    const questions = [
+      { id: 1, type: 'mcq', q: "O'zbekiston Respublikasining poytaxti qaysi shahar?", options: ["A) Samarqand", "B) Toshkent", "C) Buxoro", "D) Xiva"], correct: "B" },
+      { id: 2, type: 'mcq', q: "Buyuk sarkarda Amir Temur tavallud topgan yil?", options: ["A) 1336-yil", "B) 1405-yil", "C) 1350-yil", "D) 1389-yil"], correct: "A" },
+      { id: 3, type: 'text', q: "Yozma savol: Nisbiylik nazariyasiga asos solgan buyuk fizik familiyasini kiriting:", correct: "Einstein" },
+      { id: 4, type: 'mcq', q: "Dunyodagi eng katta okean qaysi?", options: ["A) Tinch okeani", "B) Atlantika", "C) Hind okeani", "D) Shimoliy Muzli"], correct: "A" }
+    ];
+
+    document.getElementById('totalQ').innerText = questions.length;
+
+    // Anti-Cheat (Ekrandan chiqishni kuzatish)
+    window.addEventListener('blur', () => {
+      if(!document.getElementById('examSection').classList.contains('hidden')) {
+        cheats++;
+        document.getElementById('cheatCount').innerText = `${cheats}x`;
+        let banner = document.getElementById('cheatBanner');
+        banner.classList.remove('hidden');
+        setTimeout(() => banner.classList.add('hidden'), 4000);
+      }
+    });
+
+    function startExam() {
+      let f = document.getElementById('firstName').value.trim();
+      let l = document.getElementById('lastName').value.trim();
+      if(!f || !l) { alert("Iltimos, ism va familiyangizni to'liq kiriting!"); return; }
+      studentName = `${f} ${l}`;
+
+      document.getElementById('regSection').classList.add('hidden');
+      document.getElementById('examSection').classList.remove('hidden');
+      
+      startTimer();
+      renderQ();
+    }
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        let m = Math.floor(timeLeft / 60);
+        let s = timeLeft % 60;
+        document.getElementById('timer').innerText = `${m < 10 ? '0':''}${m}:${s < 10 ? '0':''}${s}`;
+        if(timeLeft <= 0) { clearInterval(timerInterval); finishExam(); }
+      }, 1000);
+    }
+
+    function renderQ() {
+      let q = questions[currentIdx];
+      document.getElementById('qIndex').innerText = currentIdx + 1;
+      let box = document.getElementById('questionBox');
+      
+      let html = `<h3 class="font-bold text-sm text-white leading-relaxed">${q.id}. ${q.q}</h3>`;
+      html += `<div class="space-y-2.5 pt-2">`;
+
+      if(q.type === 'mcq') {
+        q.options.forEach(opt => {
+          let lettr = opt.charAt(0);
+          let sel = userAnswers[q.id] === lettr;
+          html += `<button onclick="setAns('${lettr}')" class="w-full text-left text-xs p-3.5 rounded-2xl border transition-all ${sel ? 'bg-indigo-600/30 border-indigo-500 text-white font-bold shadow-lg shadow-indigo-600/20':'bg-slate-900/60 border-slate-800 text-slate-300 hover:border-slate-700'}">${opt}</button>`;
+        });
+      } else {
+        let val = userAnswers[q.id] || '';
+        html += `<input type="text" value="${val}" oninput="setAns(this.value)" placeholder="Javobingizni shu yerga yozing..." class="w-full bg-slate-900/80 border border-slate-700/80 rounded-2xl p-3.5 text-xs text-white focus:outline-none focus:border-indigo-500">`;
+      }
+      html += `</div>`;
+      box.innerHTML = html;
+
+      document.getElementById('prevBtn').disabled = currentIdx === 0;
+      if(currentIdx === questions.length - 1) {
+        document.getElementById('nextBtn').classList.add('hidden');
+        document.getElementById('finishBtn').classList.remove('hidden');
+      } else {
+        document.getElementById('nextBtn').classList.remove('hidden');
+        document.getElementById('finishBtn').classList.add('hidden');
+      }
+    }
+
+    function setAns(val) {
+      userAnswers[questions[currentIdx].id] = val;
+      if(questions[currentIdx].type === 'mcq') renderQ();
+    }
+
+    function prevQ() { if(currentIdx > 0) { currentIdx--; renderQ(); } }
+    function nextQ() { if(currentIdx < questions.length - 1) { currentIdx++; renderQ(); } }
+
+    // Fuzzy Search (Levenshtein Distance - 60%+ o'xshashlikni tekshirish)
+    function getSimilarity(s1, s2) {
+      let longer = s1.toLowerCase().trim();
+      let shorter = s2.toLowerCase().trim();
+      if(longer === shorter) return 1.0;
+      let costs = [];
+      for (let i = 0; i <= longer.length; i++) {
+        let lastValue = i;
+        for (let j = 0; j <= shorter.length; j++) {
+          if (i === 0) costs[j] = j;
+          else {
+            if (j > 0) {
+              let newValue = costs[j - 1];
+              if (longer.charAt(i - 1) !== shorter.charAt(j - 1))
+                newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+              costs[j - 1] = lastValue;
+              lastValue = newValue;
+            }
+          }
+        }
+        if (i > 0) costs[shorter.length] = lastValue;
+      }
+      return (longer.length - costs[shorter.length]) / parseFloat(longer.length);
+    }
+
+    function finishExam() {
+      clearInterval(timerInterval);
+      let correct = 0;
+      
+      questions.forEach(q => {
+        let ans = userAnswers[q.id] || "";
+        if(q.type === 'mcq') {
+          if(ans === q.correct) correct++;
+        } else {
+          if(getSimilarity(ans, q.correct) >= 0.6) correct++;
+        }
+      });
+
+      let score = Math.round((correct / questions.length) * 100);
+      let timeSpentSecs = 900 - timeLeft;
+      let m = Math.floor(timeSpentSecs / 60);
+      let s = timeSpentSecs % 60;
+      let timeSpentStr = `${m}m ${s}s`;
+
+      let payload = {
+        fullName: studentName,
+        score: score,
+        correct: correct,
+        total: questions.length,
+        timeSpent: timeSpentStr,
+        cheats: cheats
+      };
+
+      if(tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        tg.sendData(JSON.stringify(payload));
+      } else {
+        alert("Imtihon yakunlandi! Natijangiz botga yuborildi.");
+      }
+    }
+  </script>
+</body>
+</html>
