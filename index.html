@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Repetitor Exam Pro</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; user-select: none; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex justify-center items-center p-2">
+
+  <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden min-h-[650px] flex flex-col relative">
+    
+    <!-- Anti-cheat Banner -->
+    <div id="cheatBanner" class="hidden bg-rose-600 text-white text-xs font-bold px-4 py-2 flex justify-between items-center z-50 animate-pulse">
+      <span>⚠️ Ogohlantirish: Ekrandan chiqish taqiqlangan!</span>
+      <span id="cheatCount" class="bg-black/40 px-2 py-0.5 rounded">1x</span>
+    </div>
+
+    <!-- Header -->
+    <header class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/80 backdrop-blur">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid fa-graduation-cap text-xs"></i>
+        </div>
+        <h1 class="font-bold text-sm text-white">Smart Repetitor Pro</h1>
+      </div>
+      <span class="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2.5 py-1 rounded-full font-semibold">Live Exam</span>
+    </header>
+
+    <!-- Body -->
+    <main class="flex-1 p-4 overflow-y-auto flex flex-col justify-center">
+
+      <!-- Registration Step -->
+      <section id="regSection" class="space-y-4">
+        <div class="text-center space-y-1">
+          <h2 class="text-lg font-bold text-white">O'quvchi ma'lumotlari</h2>
+          <p class="text-xs text-slate-400">Imtihonga kirish uchun ism va familiyangizni kiriting</p>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Ismingiz</label>
+            <input type="text" id="firstName" placeholder="Masalan: Bekzod" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Familiyangiz</label>
+            <input type="text" id="lastName" placeholder="Masalan: Aliyev" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+          </div>
+          <button onclick="startExam()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-600/30 text-sm transition-all">
+            Imtihonni Boshlash 🚀
+          </button>
+        </div>
+      </section>
+
+      <!-- Exam Room Step -->
+      <section id="examSection" class="hidden space-y-4">
+        <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+          <div class="text-amber-400 font-mono font-bold text-sm flex items-center gap-1.5">
+            <i class="fa-regular fa-clock"></i> <span id="timer">10:00</span>
+          </div>
+          <div class="text-xs text-slate-400">Savol: <span id="qIndex" class="text-white font-bold">1</span>/4</div>
+        </div>
+
+        <div id="questionBox" class="bg-slate-800/50 border border-slate-700/80 rounded-2xl p-4 space-y-4 min-h-[240px] flex flex-col justify-between">
+          <!-- Dynamic Question Area -->
+        </div>
+
+        <div class="flex gap-2">
+          <button id="prevBtn" onclick="prevQ()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs font-semibold py-3 rounded-xl">Oldingisi</button>
+          <button id="nextBtn" onclick="nextQ()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold py-3 rounded-xl shadow-lg">Keyingisi</button>
+          <button id="finishBtn" onclick="finishExam()" class="hidden flex-1 bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold py-3 rounded-xl shadow-lg">Tugatish ✓</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    let studentName = "";
+    let cheats = 0;
+    let currentIdx = 0;
+    let userAnswers = {};
+    let timeLeft = 600; // 10 mins
+    let timerInterval = null;
+
+    const questions = [
+      { id: 1, type: 'mcq', q: "O'zbekiston Respublikasining poytaxti?", options: ["A) Samarqand", "B) Toshkent", "C) Buxoro", "D) Xiva"], correct: "B" },
+      { id: 2, type: 'mcq', q: "Buyuk sarkarda Amir Temur nechanchi yilda tavallud topgan?", options: ["A) 1336-yil", "B) 1405-yil", "C) 1350-yil", "D) 1389-yil"], correct: "A" },
+      { id: 3, type: 'text', q: "Yozma savol: Atom energiyasini kashf etgan olim familiyasi?", correct: "Einstein" },
+      { id: 4, type: 'mcq', q: "Dunyodagi eng katta okean qaysi?", options: ["A) Tinch okeani", "B) Atlantika", "C) Hind okeani", "D) Shimoliy Muzli"], correct: "A" }
+    ];
+
+    // Anti-Cheat System
+    window.addEventListener('blur', () => {
+      if(document.getElementById('examSection').classList.contains('hidden') == false) {
+        cheats++;
+        document.getElementById('cheatCount').innerText = `${cheats}x`;
+        let banner = document.getElementById('cheatBanner');
+        banner.classList.remove('hidden');
+        setTimeout(() => banner.classList.add('hidden'), 3500);
+      }
+    });
+
+    function startExam() {
+      let f = document.getElementById('firstName').value.trim();
+      let l = document.getElementById('lastName').value.trim();
+      if(!f || !l) { alert("Iltimos, ism va familiyangizni kiriting!"); return; }
+      studentName = `${f} ${l}`;
+
+      document.getElementById('regSection').classList.add('hidden');
+      document.getElementById('examSection').classList.remove('hidden');
+      
+      startTimer();
+      renderQ();
+    }
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        let m = Math.floor(timeLeft / 60);
+        let s = timeLeft % 60;
+        document.getElementById('timer').innerText = `${m < 10 ? '0':''}${m}:${s < 10 ? '0':''}${s}`;
+        if(timeLeft <= 0) { clearInterval(timerInterval); finishExam(); }
+      }, 1000);
+    }
+
+    function renderQ() {
+      let q = questions[currentIdx];
+      document.getElementById('qIndex').innerText = currentIdx + 1;
+      let box = document.getElementById('questionBox');
+      box.innerHTML = `<h3 class="font-bold text-sm text-white">${q.id}. ${q.q}</h3>`;
+
+      let opts = document.createElement('div');
+      opts.className = "space-y-2";
+
+      if(q.type === 'mcq') {
+        q.options.forEach(opt => {
+          let lettr = opt.charAt(0);
+          let sel = userAnswers[q.id] === lettr;
+          let btn = document.createElement('button');
+          btn.className = `w-full text-left text-xs p-3 rounded-xl border transition-all ${sel ? 'bg-indigo-600/30 border-indigo-500 text-white font-bold':'bg-slate-900 border-slate-700 text-slate-300'}`;
+          btn.innerHTML = opt;
+          btn.onclick = () => { userAnswers[q.id] = lettr; renderQ(); };
+          opts.appendChild(btn);
+        });
+      } else {
+        let val = userAnswers[q.id] || '';
+        opts.innerHTML = `<input type="text" value="${val}" oninput="userAnswers[${q.id}] = this.value" placeholder="Javobni yozing..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500">`;
+      }
+      box.appendChild(opts);
+
+      document.getElementById('prevBtn').disabled = currentIdx === 0;
+      if(currentIdx === questions.length - 1) {
+        document.getElementById('nextBtn').classList.add('hidden');
+        document.getElementById('finishBtn').classList.remove('hidden');
+      } else {
+        document.getElementById('nextBtn').classList.remove('hidden');
+        document.getElementById('finishBtn').classList.add('hidden');
+      }
+    }
+
+    function prevQ() { if(currentIdx > 0) { currentIdx--; renderQ(); } }
+    function nextQ() { if(currentIdx < questions.length - 1) { currentIdx++; renderQ(); } }
+
+    // Fuzzy matching algorithm (Levenshtein distance for written answers)
+    function similarity(s1, s2) {
+      let longer = s1.toLowerCase().trim();
+      let shorter = s2.toLowerCase().trim();
+      if(longer === shorter) return 1.0;
+      let costs = new Array();
+      for (let i = 0; i <= longer.length; i++) {
+        let lastValue = i;
+        for (let j = 0; j <= shorter.length; j++) {
+          if (i === 0) costs[j] = j;
+          else {
+            if (j > 0) {
+              let newValue = costs[j - 1];
+              if (longer.charAt(i - 1) !== shorter.charAt(j - 1))
+                newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+              costs[j - 1] = lastValue;
+              lastValue = newValue;
+            }
+          }
+        }
+        if (i > 0) costs[shorter.length] = lastValue;
+      }
+      return (longer.length - costs[shorter.length]) / parseFloat(longer.length);
+    }
+
+    function finishExam() {
+      clearInterval(timerInterval);
+      let correct = 0;
+      questions.forEach(q => {
+        let ans = userAnswers[q.id] || "";
+        if(q.type === 'mcq') {
+          if(ans === q.correct) correct++;
+        } else {
+          if(similarity(ans, q.correct) >= 0.6) correct++; // 60%+ typo tolerance
+        }
+      });
+
+      let score = Math.round((correct / questions.length) * 100);
+      let timeSpentSecs = 600 - timeLeft;
+      let m = Math.floor(timeSpentSecs / 60);
+      let s = timeSpentSecs % 60;
+      let timeSpentStr = `${m}:${s < 10 ? '0':''}${s}`;
+
+      let payload = {
+        fullName: studentName,
+        score: score,
+        correct: correct,
+        total: questions.length,
+        timeSpent: timeSpentStr,
+        cheats: cheats
+      };
+
+      if(tg.initDataUnsafe && tg.initDataUnsafe.user) {
+        tg.sendData(JSON.stringify(payload));
+      } else {
+        alert("Natijangiz tayyor! Botga yuborilmoqda...");
+      }
+    }
+  </script>
+</body>
+</html>
